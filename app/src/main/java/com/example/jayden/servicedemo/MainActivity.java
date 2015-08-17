@@ -20,7 +20,8 @@ public class MainActivity extends AppCompatActivity implements ViewPresenter{
 
 
     private void init(){
-        PresenterImpl presenter = new PresenterImpl(MainActivity.this, this);
+        PresenterImpl presenter = PresenterImpl.getInstance(this);
+        presenter.setViewPresenter(this);
         //mock connect
         //presenter.connect();
     }

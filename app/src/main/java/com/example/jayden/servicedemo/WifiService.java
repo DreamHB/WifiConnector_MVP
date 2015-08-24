@@ -186,4 +186,19 @@ public class WifiService extends Service {
     //receiver wifi broadcast and send message to client
     private void wifiConnected(){
     }
+
+    /**
+     * method for wifi operating
+     */
+    public boolean connect(){
+        return false;
+    }
+
+    /**
+     * disconnect
+     * @return true is success or false for failed
+     */
+    public boolean disconnect(){
+        return false;
+    }
 }

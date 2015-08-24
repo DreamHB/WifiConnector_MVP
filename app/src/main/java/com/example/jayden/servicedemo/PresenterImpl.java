@@ -104,22 +104,24 @@ public class PresenterImpl implements WifiPresenter{
 
     @Override
     public void connect() {
-        Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_CONNECT, "ssid");
-        try {
-            mService.send(msg);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+//        Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_CONNECT, "ssid");
+//        try {
+//            mService.send(msg);
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
+        wifiService.connect();
     }
 
     @Override
     public void disconnect() {
-        Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_DISCONNECT, "ssid");
-        try {
-            mService.send(msg);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+//        Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_DISCONNECT, "ssid");
+//        try {
+//            mService.send(msg);
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
+        wifiService.disconnect();
     }
 
     static class InComingHandler extends Handler{

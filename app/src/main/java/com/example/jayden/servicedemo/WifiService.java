@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.wifi.ScanResult;
 import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -15,15 +16,20 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+
+import java.util.List;
 
 public class WifiService extends Service {
     private static final String LOG_TAG = "WifiServiceBingo";
 
+    public static final String ACTION_SCAN_RESULT_GOT = "action_scan_result_got";
     public static final int WIFI_CLIENT_BIND = 0;
     public static final int WIFI_CLIENT_CONNECT = 1;
     public static final int WIFI_CLIENT_DISCONNECT = 2;
 
+    private WifiManager wifiManager;
     private Messenger client = null;
     private Messenger service = new Messenger(new InComingHandler(this));
     private BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
@@ -36,6 +42,7 @@ public class WifiService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        wifiManager = (WifiManager)getSystemService(WIFI_SERVICE);
         registerWifiReceiver();
     }
 
@@ -85,11 +92,29 @@ public class WifiService extends Service {
         int state = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, -1);
         int preState = intent.getIntExtra(WifiManager.EXTRA_PREVIOUS_WIFI_STATE, -1);
         Log.d(LOG_TAG, " wifi state = " + state + " previous state = " + preState);
-
     }
 
+    /**
+     * when scan results available, we broadcast it and
+     * client can get from here
+     * @param intent
+     */
     private void scanResultsAvail(Intent intent){
-        Log.d(LOG_TAG, " scan results available ");
+        //broadcast scan results
+        LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
+        Intent intentNew = new Intent(WifiService.ACTION_SCAN_RESULT_GOT);
+        boolean broadcastStatus = lbm.sendBroadcast(intentNew);
+        Log.d(LOG_TAG, " scan results available and we broadcast intent -> " + broadcastStatus);
+    }
+
+    /**
+     * @return scan result list
+     */
+    public List<ScanResult> getScanResults(){
+        if(wifiManager != null) {
+            return wifiManager.getScanResults();
+        }
+        return null;
     }
 
     private void networkStateChanged(Intent intent){
@@ -128,7 +153,7 @@ public class WifiService extends Service {
     }
 
     private void rssiChanged(Intent intent){
-        Log.d(LOG_TAG, " rssiChanged new rssi = " + intent.getStringExtra(WifiManager.EXTRA_NEW_RSSI));
+        //Log.d(LOG_TAG, " rssiChanged new rssi = " + intent.getStringExtra(WifiManager.EXTRA_NEW_RSSI));
     }
 
     private void connectChanged(Intent intent){

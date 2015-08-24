@@ -27,6 +27,7 @@ import android.util.SparseArray;
 public class PresenterImpl implements WifiPresenter{
     private static final String LOG_TAG = PresenterImpl.class.getSimpleName();
 
+    private Context context;
     /**
      * array of viewPresenter
      */
@@ -54,6 +55,7 @@ public class PresenterImpl implements WifiPresenter{
     };
 
     private PresenterImpl(Context context){
+        this.context = context;
         viewPresenterSparseArray = new SparseArray<>(2);
         context.startService(new Intent(context, WifiService.class));
         //bind service
@@ -67,9 +69,13 @@ public class PresenterImpl implements WifiPresenter{
         return INSTANCE;
     }
 
+    /**
+     * at most two
+     * @param presenter
+     */
     public void setViewPresenter(ViewPresenter presenter){
         if(viewPresenterSparseArray == null){
-            throw new NullPointerException(" please call getInstance first");
+            throw new NullPointerException(" please call getInstance first !");
         }
 
         if(viewPresenterSparseArray.size() == 0){
@@ -81,6 +87,11 @@ public class PresenterImpl implements WifiPresenter{
             viewPresenterSparseArray.put(0, presenter);
         }
     }
+
+    public void unBindService(){
+        context.unbindService(serviceConnection);
+    }
+
 
     @Override
     public void connect() {
@@ -102,9 +113,6 @@ public class PresenterImpl implements WifiPresenter{
         }
     }
 
-    /**
-     * may lead to memory leak
-     */
     static class InComingHandler extends Handler{
         private PresenterImpl presenter;
         public InComingHandler(PresenterImpl presenter){
@@ -114,10 +122,10 @@ public class PresenterImpl implements WifiPresenter{
         public void handleMessage(Message msg) {
             switch (msg.what){
                 case WifiService.WIFI_CLIENT_CONNECT:
-                    Log.d(LOG_TAG, " wifi connected recv msg");
+                    Log.d(LOG_TAG, " wifi connected receive msg");
                     for(int i = 0, size = presenter.viewPresenterSparseArray.size(); i < size; i++){
                         ViewPresenter vp = presenter.viewPresenterSparseArray.get(i);
-                        vp.wifiConnected();
+                        vp.wifiConnecting();
                     }
                     break;
             }

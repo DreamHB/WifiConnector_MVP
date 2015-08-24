@@ -185,6 +185,7 @@ public class WifiService extends Service {
 
     //receiver wifi broadcast and send message to client
     private void wifiConnected(){
+
     }
 
     /**

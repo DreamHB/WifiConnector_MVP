@@ -1,14 +1,14 @@
 package com.example.jayden.servicedemo;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.net.wifi.ScanResult;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
-import android.os.Messenger;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -30,32 +30,30 @@ public class PresenterImpl implements WifiPresenter{
     private static final String LOG_TAG = PresenterImpl.class.getSimpleName();
 
     private Context context;
+    private LocalBroadcastManager localBroadcastManager;
     /**
      * array of viewPresenter
      */
     private SparseArray<ViewPresenter> viewPresenterSparseArray;
     private static PresenterImpl INSTANCE;
-    private Messenger messenger = new Messenger(new InComingHandler(this));
-    private Messenger mService = null;
     private WifiService wifiService;
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-//            mService = new Messenger(service);
-//            Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_BIND);
-//            msg.replyTo = messenger;
-//            try {
-//                mService.send(msg);
-//            } catch (RemoteException e) {
-//                e.printStackTrace();
-//            }
             wifiService = ((WifiService.LocalBinder)service).getService();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mService = null;
             wifiService = null;// let gc collect it
+        }
+    };
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(LOG_TAG, " get action = " + intent.getAction());
+            wifiConnected();
         }
     };
 
@@ -65,6 +63,11 @@ public class PresenterImpl implements WifiPresenter{
         context.startService(new Intent(context, WifiService.class));
         //bind service
         context.bindService(new Intent(context, WifiService.class), serviceConnection, Context.BIND_AUTO_CREATE);
+
+        localBroadcastManager = LocalBroadcastManager.getInstance(context);
+        IntentFilter filter = new IntentFilter(WifiService.ACTION_WIFI_CONNECTED);
+        filter.addAction(WifiService.ACTION_WIFI_DISCONNECTED);
+        localBroadcastManager.registerReceiver(broadcastReceiver, filter);
     }
 
     public static PresenterImpl getInstance(Context context){
@@ -103,43 +106,27 @@ public class PresenterImpl implements WifiPresenter{
 
     @Override
     public void connect() {
-//        Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_CONNECT, "ssid");
-//        try {
-//            mService.send(msg);
-//        } catch (RemoteException e) {
-//            e.printStackTrace();
-//        }
         wifiService.connect();
     }
 
     @Override
     public void disconnect() {
-//        Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_DISCONNECT, "ssid");
-//        try {
-//            mService.send(msg);
-//        } catch (RemoteException e) {
-//            e.printStackTrace();
-//        }
         wifiService.disconnect();
     }
 
-    static class InComingHandler extends Handler{
-        private PresenterImpl presenter;
-        public InComingHandler(PresenterImpl presenter){
-            this.presenter = presenter;
+    private void wifiConnected(){
+        for(int i = 0, len = viewPresenterSparseArray.size(); i < len; i++){
+            viewPresenterSparseArray.get(i).wifiConnected();
         }
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what){
-                case WifiService.WIFI_CLIENT_CONNECT:
-                    Log.d(LOG_TAG, " wifi connected receive msg");
-                    for(int i = 0, size = presenter.viewPresenterSparseArray.size(); i < size; i++){
-                        ViewPresenter vp = presenter.viewPresenterSparseArray.get(i);
-                        vp.wifiConnecting();
-                    }
-                    break;
-            }
-            super.handleMessage(msg);
-        }
+    }
+
+    /**
+     * test code for unregister receiver
+     * @throws Throwable
+     */
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        localBroadcastManager.unregisterReceiver(broadcastReceiver);
     }
 }

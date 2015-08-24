@@ -61,7 +61,6 @@ public class MainActivity extends AppCompatActivity implements ViewPresenter{
     public void wifiConnected() {
         Log.d(LOG_TAG, " wifi connected ");
         Toast.makeText(this, " wifi connected !!!! ", Toast.LENGTH_LONG).show();
-
     }
 
     @Override

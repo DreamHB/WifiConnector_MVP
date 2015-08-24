@@ -18,16 +18,23 @@ import android.util.Log;
 
 import java.util.List;
 
+/**
+ * notify presenter through local broadcast receiver
+ */
 public class WifiService extends Service {
     private static final String LOG_TAG = "WifiServiceBingo";
 
     public static final String ACTION_SCAN_RESULT_GOT = "action_scan_result_got";
+    public static final String ACTION_WIFI_CONNECTED = "action_wifi_connected";
+    public static final String ACTION_WIFI_DISCONNECTED = "action_wifi_disconnected";
     public static final int WIFI_CLIENT_BIND = 0;
     public static final int WIFI_CLIENT_CONNECT = 1;
     public static final int WIFI_CLIENT_DISCONNECT = 2;
 
     private LocalBinder binder;
     private WifiManager wifiManager;
+    private LocalBroadcastManager localBroadcastManager;
+
     private BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -46,6 +53,7 @@ public class WifiService extends Service {
         super.onCreate();
         wifiManager = (WifiManager)getSystemService(WIFI_SERVICE);
         binder = new LocalBinder();
+        localBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
         registerWifiReceiver();
     }
 
@@ -121,9 +129,8 @@ public class WifiService extends Service {
      */
     private void scanResultsAvail(Intent intent){
         //broadcast scan results
-        LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
         Intent intentNew = new Intent(WifiService.ACTION_SCAN_RESULT_GOT);
-        boolean broadcastStatus = lbm.sendBroadcast(intentNew);
+        boolean broadcastStatus = localBroadcastManager.sendBroadcast(intentNew);
         Log.d(LOG_TAG, " scan results available and we broadcast intent -> " + broadcastStatus);
     }
 
@@ -185,7 +192,8 @@ public class WifiService extends Service {
 
     //receiver wifi broadcast and send message to client
     private void wifiConnected(){
-
+        boolean state = localBroadcastManager.sendBroadcast(new Intent(WifiService.ACTION_WIFI_CONNECTED));
+        Log.d(LOG_TAG, " send connected broadcast = " + state);
     }
 
     /**

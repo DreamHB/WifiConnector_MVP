@@ -11,11 +11,8 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.Handler;
+import android.os.Binder;
 import android.os.IBinder;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -29,9 +26,8 @@ public class WifiService extends Service {
     public static final int WIFI_CLIENT_CONNECT = 1;
     public static final int WIFI_CLIENT_DISCONNECT = 2;
 
+    private LocalBinder binder;
     private WifiManager wifiManager;
-    private Messenger client = null;
-    private Messenger service = new Messenger(new InComingHandler(this));
     private BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -39,11 +35,35 @@ public class WifiService extends Service {
         }
     };
 
+    protected class LocalBinder extends Binder{
+        public WifiService getService(){
+            return WifiService.this;
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         wifiManager = (WifiManager)getSystemService(WIFI_SERVICE);
+        binder = new LocalBinder();
         registerWifiReceiver();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_STICKY;
+    }
+
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return binder;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(wifiReceiver);
     }
 
     private void registerWifiReceiver(){
@@ -162,52 +182,8 @@ public class WifiService extends Service {
         Log.d(LOG_TAG, " connect failed reason = " + reason);
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
-    }
-
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return service.getBinder();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        unregisterReceiver(wifiReceiver);
-    }
-
-    static class InComingHandler extends Handler{
-        private WifiService wifiService;
-
-        public InComingHandler(WifiService wifiService){
-            this.wifiService = wifiService;
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what){
-                case WIFI_CLIENT_BIND:
-                    wifiService.client = msg.replyTo;
-                    Log.d(LOG_TAG, " client bind == " + wifiService.client);
-                    break;
-            }
-            super.handleMessage(msg);
-        }
-    }
 
     //receiver wifi broadcast and send message to client
     private void wifiConnected(){
-        Message msg = Message.obtain(null, WIFI_CLIENT_CONNECT);
-        try {
-            if(client != null) {
-                client.send(msg);
-            }
-            Log.d(LOG_TAG, " wifiConnected wifi connected send msg");
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
     }
 }

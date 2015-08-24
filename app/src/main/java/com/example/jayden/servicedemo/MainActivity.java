@@ -22,6 +22,7 @@ public class MainActivity extends AppCompatActivity implements ViewPresenter{
             Log.d(LOG_TAG, " onReceiver == " + intent.getAction());
             if(intent.getAction().equals(WifiService.ACTION_SCAN_RESULT_GOT)){
                 //handle and show scan results
+                presenter.getScanResults();
             }
         }
     };

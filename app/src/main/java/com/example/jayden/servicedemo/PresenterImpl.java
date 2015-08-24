@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.wifi.ScanResult;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -11,6 +12,8 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.util.Log;
 import android.util.SparseArray;
+
+import java.util.List;
 
 
 /**
@@ -35,22 +38,25 @@ public class PresenterImpl implements WifiPresenter{
     private static PresenterImpl INSTANCE;
     private Messenger messenger = new Messenger(new InComingHandler(this));
     private Messenger mService = null;
+    private WifiService wifiService;
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            mService = new Messenger(service);
-            Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_BIND);
-            msg.replyTo = messenger;
-            try {
-                mService.send(msg);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+//            mService = new Messenger(service);
+//            Message msg = Message.obtain(null, WifiService.WIFI_CLIENT_BIND);
+//            msg.replyTo = messenger;
+//            try {
+//                mService.send(msg);
+//            } catch (RemoteException e) {
+//                e.printStackTrace();
+//            }
+            wifiService = ((WifiService.LocalBinder)service).getService();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             mService = null;
+            wifiService = null;// let gc collect it
         }
     };
 
@@ -92,6 +98,9 @@ public class PresenterImpl implements WifiPresenter{
         context.unbindService(serviceConnection);
     }
 
+    public List<ScanResult> getScanResults(){
+        return wifiService.getScanResults();
+    }
 
     @Override
     public void connect() {
